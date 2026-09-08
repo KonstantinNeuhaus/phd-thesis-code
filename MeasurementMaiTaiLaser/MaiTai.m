@@ -218,7 +218,7 @@ classdef MaiTai < handle
         end
 
         % get SHF Status
-        function str = get.shgStatus(obj)
+        function str_return = get.shgStatus(obj)
             writeline(obj.session,'READ:PLASer:SHGS?');
             checkStatus(obj,3);
             str = readline(obj.session);
@@ -231,8 +231,10 @@ classdef MaiTai < handle
             elseif strcmp(str,'0S')
                 obj.shgStatus = 'Oven is not on';
             else
+                obj.shgStatus = 'Unknown code, check Manual';
                 warning(['Status Code for SHG reads: ',char(str),' indicating an error! Check manual']);
             end
+            str_return = obj.shgStatus;
         end
 
         % read Pump Laser Percentage Current
@@ -304,14 +306,14 @@ classdef MaiTai < handle
         % Save current Status of Mai Tai to return to this mode after unit
         % is powered off and on
         function  obj = saveStatus(obj)    
-            write(obj.session,'SAVe');
+            writeline(obj.session,'SAVe');
         end
 
         % Turn Off/On Mode Locker
         function  obj = setModelocker(obj,newState)  
             if newState == 1
                 writeline(obj.session,'CONTrol:MLENable 1');
-            elseif newstate == 0
+            elseif newState == 0
                 writeline(obj.session,'CONTrol:MLENable 0');
             end
             obj.modelocker;
@@ -328,7 +330,7 @@ classdef MaiTai < handle
                     disp('RF Phase was not changed!');
                 case 'Yes, change anyway'
                       disp('RF Phase was changed!');
-                      command = strjoin({'CONTrol:PHAse',sprintf(newValue,'%.2f')});
+                      command = strjoin({'CONTrol:PHAse',sprintf('%.2f',newValue)});
                       writeline(obj.session,command);
             end
             obj.phase;
@@ -355,7 +357,7 @@ classdef MaiTai < handle
                 command = strjoin({'SYSTem:COMMunications:SERial:BAUD ',num2str(newValue)});
     
                 writeline(obj.session,command);
-%                 obj.session.Baudrate =  newValue   
+                obj.session.Baudrate =  newValue;
             else
                 warning('Baud Rate could not be changed. User input was invalid. Valid options are: 300,600,1200,4800,19200,38400,57600');
             end
@@ -382,6 +384,7 @@ classdef MaiTai < handle
             bts = obj.session.NumBytesAvailable;  % checking number of bytes in the response
             while bts < bytesNeeded
                 bts = obj.session.NumBytesAvailable;  % checking number of bytes in the response
+                pause(0.0001);
             end
             ready = 'True';
         end
