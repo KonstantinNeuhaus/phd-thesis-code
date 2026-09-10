@@ -252,20 +252,26 @@ classdef MaiTai < handle
         % Open Shutter
         function  obj = openShutter(obj)           
             writeline(obj.session,'SHUTter 1');
-            obj.shutterOpen();
+            pause(1);
+            if ~obj.shutterOpen
+                 warning('MaiTai:ShutterOpenFailed','Shutter did not report open after command.');
+            end
         end
 
         % Close Shutter
         function  obj = closeShutter(obj)           
             writeline(obj.session,'SHUTter 0');
-            obj.shutterOpen();
+            pause(1);
+             if obj.shutterOpen
+                 warning('MaiTai:ShutterClosedFailed','Shutter did not report closed after command.');
+            end
         end
 
         % Change Wavelength
         function  obj = changeWavelength(obj,newWavelength)      
             % Check if wavelength to check is within range of the device
             if newWavelength >= obj.wavelengthMin && newWavelength <=    obj.wavelengthMax
-                command = strjoin({'WAVelength ',num2str(newWavelength)});
+                command = sprintf('WAVelength %g', newWavelength);
                 writeline(obj.session,command);
             else
                 warning(['Cannot set the wavelength to ',num2str(newWavelength),...
@@ -330,7 +336,7 @@ classdef MaiTai < handle
                     disp('RF Phase was not changed!');
                 case 'Yes, change anyway'
                       disp('RF Phase was changed!');
-                      command = strjoin({'CONTrol:PHAse',sprintf('%.2f',newValue)});
+                      command = sprintf('CONTrol:PHAse %.2f',newValue);
                       writeline(obj.session,command);
             end
             obj.phase;
@@ -340,7 +346,7 @@ classdef MaiTai < handle
         function  obj = setMode(obj,newValue)  
             % Check if new Mode is valid
             if strcmp(newValue,'PCURrent') || strcmp(newValue,'PPOWer') || strcmp(newValue,'POWer')
-                command = strjoin({'MODE ',newValue});
+                command = sprintf('MODE %s', newValue);
                 writeline(obj.session,command);
                 obj.mode;
             else
@@ -354,10 +360,10 @@ classdef MaiTai < handle
             validValues = [300,600,1200,4800,9600,19200,38400,57600];
             isValid = max(newValue == validValues);
             if isValid
-                command = strjoin({'SYSTem:COMMunications:SERial:BAUD ',num2str(newValue)});
-    
+                command = sprintf('SYSTem:COMMunications:SERial:BAUD %d',newValue);
+                
                 writeline(obj.session,command);
-                obj.session.Baudrate =  newValue;
+                obj.session.BaudRate =  newValue;
             else
                 warning('Baud Rate could not be changed. User input was invalid. Valid options are: 300,600,1200,4800,19200,38400,57600');
             end

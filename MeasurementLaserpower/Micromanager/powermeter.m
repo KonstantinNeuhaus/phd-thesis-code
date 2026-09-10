@@ -1,7 +1,7 @@
 classdef powermeter < handle
     
     properties   
-        port;%COM2
+        port;
         session;
         unit = 'W';
         Interface = 'RS232'; 
@@ -17,53 +17,49 @@ classdef powermeter < handle
 
     end
     methods
+%         function powermeter = powermeter(port)
+%             powermeter.port = port;
+%         end
         function powermeter = Open_powermeter(powermeter,port)
             %% Setting up initial parameters for the com port
             powermeter.port = port;
             powermeter.session = serialport(port,115200,'Parity','none',StopBits=2,DataBits=8);
             configureTerminator(powermeter.session,'CR/LF','CR/LF')
-     
         end       
 
 
         function powermeter = SetInterface(powermeter,Interface)
-            command = strjoin({'SYSTem:COMMunicate:INTerface ',Interface,'\n'});
+            command = sprintf('SYSTem:COMMunicate:INTerface %s',Interface);
             writeline(powermeter.session,command);
             pause(0.1);
         end
 
 
         function powermeter = SetUnit(powermeter,unit_)
-            command = strjoin({'CONFigure:MEASure ',unit_,'\n'});
+            command = sprintf('CONFigure:MEASure %s',unit_);
             writeline(powermeter.session,command);
             powermeter.unit = unit_;
-            %powermeter.last_time_laps = checkStatus(powermeter);  
-            %powermeter.response = fgets(powermeter.session);
+  
         end
 
         
         function powermeter = SetWavelengthCorrection(powermeter,Correction)
-            command = strjoin({'CONFigure:WAVElength:CORRection ',Correction,'\n'});
+            command = sprintf('CONFigure:WAVElength:CORRection %s',Correction);
             writeline(powermeter.session,command);
             powermeter.Correction = Correction;
-           % powermeter.last_time_laps = checkStatus(powermeter);  
-           % powermeter.response = fgets(powermeter.session);
         end          
         
         function powermeter = SetWavelength(powermeter, Wavelength)
-            command = strjoin({'CONFigure:WAVElength:WAVElength ',num2str(Wavelength),'\n'});
+            command = sprintf('CONFigure:WAVElength:WAVElength %s',num2str(Wavelength));
             writeline(powermeter.session,command);
             powermeter.wavelength = Wavelength;
-            %powermeter.last_time_laps = checkStatus(powermeter);  
-            %powermeter.response = fgets(powermeter.session);
         end
         
         function powermeter = GetWavelength(powermeter)
             writeline(powermeter.session,'CONF:WAVElength:WAVElength? \n');
-            powermeter.wavelength = readline(powermeter.session);
+            powermeter.wavelength = str2double(readline(powermeter.session));
         end
         
-        %Was genau macht nullen? wird der Wert automatisch von Messwerten
         %abgezogen?
         function powermeter = GetOffset(powermeter)
             writeline(powermeter.session,'CONFigure:ZERO \n');
@@ -81,7 +77,7 @@ classdef powermeter < handle
                 error(['Error changing Display Backlight! Non valid light state: ',light_status,' . Valid Options: [On/Off]']);
                 return %#ok<UNRCH> 
             end
-            command = strjoin({'DISPlay:BACKlight ',light_status,'\n'});
+            command = sprintf('DISPlay:BACKlight %s',light_status);
             writeline(powermeter.session,command);
         end  
         
@@ -95,22 +91,8 @@ classdef powermeter < handle
             writeline(powermeter.session,'CONFigure:WAVElength:LIST? \n');
             % Get comma separated list
             table_wavelength = readline(powermeter.session);
-            
-            %ToDo: String to List
         end
       
-        %% Single Meausurement Mode
-%         function data = GetBackground(powermeter,datapoints)
-%             fprintf(powermeter.session,'CONFigure:READings:HEADers OFF \n');
-%             data_temp = zeros(1,datapoints);
-%             for i = 1:datapoints
-%                 fprintf(powermeter.session,'INITiate \n');
-%                 pause(0.1)%Pause, damit zum einen Wert da ist und zum anderen über längeren Zeitraum gemittelt wird
-%                 fprintf(powermeter.session,'FETCh:NEXT? \n');
-%                 data_temp(i) = str2num(fgetl(powermeter.session));
-%             end
-%             data = mean(data_temp);        
-%         end        
         function measurement = single_acquisitions(powermeter)
             writeline(powermeter.session,'INIT \n');
             pause(0.1);
@@ -170,12 +152,10 @@ classdef powermeter < handle
             delete(powermeter.session);
             clear powermeter.session
             clear powermeter
-            %powermeter.status = 'closed';
-           % powermeter.response = 'Shut down';
         end
                      
         function checkError(powermeter)
-            powermeter.errorStateState = false;
+            powermeter.errorState = false;
              if contains(powermeter.response,'-350')
                 uiwait(msgbox('Queue overflow \n Error queue is full', 'Error', 'error'));
                 powermeter.errorState = true;
